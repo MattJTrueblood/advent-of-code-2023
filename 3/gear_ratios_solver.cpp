@@ -1,20 +1,17 @@
 
-/**************************
- * Day 2:  Cube Conundrum *
- **************************/
+/***********************
+ * Day 1:  Trebuchet?! *
+ ***********************/
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <vector>
 
 using namespace std;
 
-//set to false to get part 1 result instead
-static const bool PART_2_ENABLED = false;
+static const bool PART_2_ENABLED = true;
 
-// maximums for part 1
 static const int MAX_RED_CUBES = 12;
 static const int MAX_GREEN_CUBES = 13;
 static const int MAX_BLUE_CUBES = 14;
@@ -112,7 +109,6 @@ int getPowerOfGame(string &str) {
         }
     }
 
-    // compute power
     return minRed * minBlue * minGreen;
 }
 
