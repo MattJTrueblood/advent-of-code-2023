@@ -47,6 +47,7 @@ vector<vector<string>> parseLinesIntoSpaceSeparatedWords(vector<string> lines) {
     return wordLines;
 }
 
+// parse the seeds line
 vector<long> getSeedNumbers(vector<string> line) {
     vector<long> seeds;
     for(int i = 1; i < line.size(); i++) {
@@ -55,6 +56,13 @@ vector<long> getSeedNumbers(vector<string> line) {
     return seeds;
 }
 
+// This confusing return type is just the following:
+//
+// list of steps:
+//   <pointer to> list of mappings for this step:
+//     3-element vector of this mappping for this step {sourceStart, sourceEnd, destinationStart} (destinationEnd isn't needed)
+//
+// This function simply converts from wordLines to this format.
 vector<vector<vector<long>>*> parseMapChain(vector<vector<string>> wordLines) {
     vector<vector<vector<long>>*> mapsChain;
 
@@ -86,12 +94,15 @@ vector<vector<vector<long>>*> parseMapChain(vector<vector<string>> wordLines) {
     return mapsChain;
 }
 
+// since we use new in parseMapChain when generating the vector<vector<vector<long>>*> mapChain, we need to delete each
+// heap-allocated pointer.  Kind of a pain but makes the logic in parseMapChain less awful so we'll stick with it.
 void deleteMapChain(vector<vector<vector<long>>*> mapChain) {
     for(int i = 0; i < mapChain.size(); i++) {
         delete mapChain[i];
     }
 }
 
+// for part 1, iterates through the mapChain starting with the seed number until it ends in the location number (then returns that).
 long findSeedLocation(vector<vector<vector<long>>*> mapChain, long seedNumber) {
     long currentSource = seedNumber;
     for(int i = 0; i < mapChain.size(); i++) {
@@ -109,7 +120,7 @@ long findSeedLocation(vector<vector<vector<long>>*> mapChain, long seedNumber) {
     return currentSource; // should be the location by the end
 }
 
-// part 1 result solver
+// part 1 solver
 long getLowestSeedLocation(vector<string> lines) {
     vector<vector<string>> wordLines = parseLinesIntoSpaceSeparatedWords(lines);
     vector<long> seeds = getSeedNumbers(wordLines[0]);
@@ -123,17 +134,20 @@ long getLowestSeedLocation(vector<string> lines) {
         }
     }
 
+    // free the heap memory allocated in parseMapChain
     deleteMapChain(mapChain);
     return smallestLocation;
 }
 
 // For each step, we have a set of source ranges.  Each source range will generate some number of destination ranges from the
 // current map ranges, we iterate through this process until we've gone through each step in the map chain.
-// At the end, we go through every single range in the final sourceRanges and find the absolute lowest value and return it
+// At the end, we go through every single range in the final sourceRanges and find the absolute lowest value and return it.
+//
 // This is extremely finicky since there are so many special cases (e.g. where a sourceRange start end partially overlaps a given
 // map range, or starts in a map range and ends outside it, etc.) which is why this function is so stupidly complicated.
 // There's no easy way to do this outside of a brute-force for(seedStart to seedEnd) approach with the part1 solution.
-// This method is the "efficient" solution to the Part 2 problem, but it sacrifices legibility/simplicity and took ages to code.
+//
+// This method is the "efficient" solution to the Part 2 complication, but it sacrifices legibility/simplicity and took ages to code.
 long findLowestLocationFromSeedRange(vector<vector<vector<long>>*> mapChain, long seedStart, long seedEnd) {
 
     vector<pair<long, long>> sourceRanges;
@@ -226,6 +240,7 @@ long getLowestSeedLocationPart2(vector<string> lines) {
         }
     }
 
+    // free the heap memory allocated in parseMapChain
     deleteMapChain(mapChain);
     return smallestLocation;
 }
