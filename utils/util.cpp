@@ -20,3 +20,25 @@ vector<string> parseFile(char* filename) {
     }
     return lines;
 }
+
+// read a line and separate it into space-delimited words.  Multiple spaces between words are handled properly.
+vector<string> parseLine(string line) {
+    istringstream stringStream(line);
+    string word;
+    vector<string> words;
+    while(getline(stringStream, word, ' ')) {
+        if(word.size() > 0) { // handles multiple spaces
+             words.push_back(word);
+        }
+    }
+    return words;
+}
+
+// calls parseLine for every line in a lines vector.
+vector<vector<string>> parseAllLines(vector<string> lines) {
+    vector<vector<string>> wordsInLines;
+    for(int i = 0; i < lines.size(); i++) {
+        wordsInLines.push_back(parseLine(lines[i]));
+    }
+    return wordsInLines;
+}
