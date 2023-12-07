@@ -42,3 +42,8 @@ vector<vector<string>> parseAllLines(vector<string> lines) {
     }
     return wordsInLines;
 }
+
+// converts a number character (e.g. '4') to the int that it represents
+int charToInt(char c) {
+    return int(c) - 48;
+}

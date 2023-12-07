@@ -22,5 +22,6 @@ void printlnColor(const string& text, color foreground, color background);
 vector<string> parseFile(char* filename);
 vector<string> parseLine(string line);
 vector<vector<string>> parseAllLines(vector<string>);
+int charToInt(char c);
 
 #endif // UTIL_H
