@@ -23,5 +23,7 @@ vector<string> parseFile(char* filename);
 vector<string> parseLine(string line);
 vector<vector<string>> parseAllLines(vector<string>);
 int charToInt(char c);
+long long gcd(long long a, long long b);
+long long lcm(long long a, long long b);
 
 #endif // UTIL_H

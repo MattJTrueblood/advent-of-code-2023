@@ -47,3 +47,22 @@ vector<vector<string>> parseAllLines(vector<string> lines) {
 int charToInt(char c) {
     return int(c) - 48;
 }
+
+// greatest common denominator
+long long gcd(long long a, long long b)
+{
+    for (;;)
+    {
+        if (a == 0) return b;
+        b %= a;
+        if (b == 0) return a;
+        a %= b;
+    }
+}
+
+// least common multiple
+long long lcm(long long a, long long b)
+{
+    long long temp = gcd(a, b);
+    return temp ? ((a / temp) * b) : 0;
+}
