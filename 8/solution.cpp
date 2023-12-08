@@ -1,6 +1,6 @@
 
 /*****************************
- * Day N:  Haunted Wasteland *
+ * Day 8:  Haunted Wasteland *
  *****************************/
 
 #include <iostream>
