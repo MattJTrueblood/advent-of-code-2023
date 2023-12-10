@@ -32,5 +32,6 @@ long long gcd(long long a, long long b);
 long long lcm(long long a, long long b);
 vector<pair<int, int>> findValidNeighborCoords(int row, int col, int numRows, int numCols);
 pair<int, int> goInDirection(pair<int, int> coords, direction dir);
+string charToString(char c);
 
 #endif // UTIL_H

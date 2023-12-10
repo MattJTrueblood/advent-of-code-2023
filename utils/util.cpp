@@ -98,7 +98,12 @@ pair<int, int> goInDirection(pair<int, int> coords, direction dir) {
     if(dir == RIGHT_DIRECTION) {
         return make_pair(coords.first, coords.second + 1);
     }
-    cout << "fuck this.  dir=" << dir << endl;
+
     //should never happen
     return coords;
+}
+
+string charToString(char c) {
+    string s(1, c);
+    return s;
 }
