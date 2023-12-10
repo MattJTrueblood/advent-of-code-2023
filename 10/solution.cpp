@@ -1,6 +1,6 @@
 
 /**********************
- * Day N:  ~~~~~~~~~  *
+ * Day 10:  Pipe Maze *
  **********************/
 
 #include <iostream>
@@ -16,7 +16,7 @@ static const bool PART_2_ENABLED = true;
 
 enum inside_status { OUTSIDE_LOOP=0, INSIDE_LOOP=1, UNKNOWN=2 };
 
-// can represent either a pipe or an empty space.  
+// tile can represent either a pipe or an empty space.  
 class PipeTile {
 public:
     bool isPipe = false;
@@ -24,11 +24,6 @@ public:
     bool down = false;
     bool left = false;
     bool right = false;
-
-    bool rightInside = false;
-    bool leftInside = false;
-    bool upInside = false;
-    bool downInside = false;
 
     bool loopPipe = false;
     inside_status insideOrOutside = UNKNOWN;
@@ -99,6 +94,7 @@ pair<int, int> findStartCoords(vector<string> lines) {
     return make_pair(-1, -1); // this should never happen
 }
 
+// read each char and convert it to a PipeTile in a grid
 vector<vector<PipeTile*>> parsePipes(vector<string> lines) {
     vector<vector<PipeTile *>> pipeTiles;
     for(int i = 0; i < lines.size(); i++) {
@@ -112,6 +108,7 @@ vector<vector<PipeTile*>> parsePipes(vector<string> lines) {
     return pipeTiles;
 }
 
+// free up all the heap-allocated PipeTile memory
 void deletePipeTiles(vector<vector<PipeTile*>> pipeTiles) {
     for(int i = 0; i < pipeTiles.size(); i++) {
         for(int j = 0; j < pipeTiles[0].size(); j++) {
@@ -121,14 +118,14 @@ void deletePipeTiles(vector<vector<PipeTile*>> pipeTiles) {
     return;
 }
 
+// draw a colorful visualization of the grid
 void drawPipes(vector<vector<PipeTile*>> pipeTiles) {
     for(int i = 0; i < pipeTiles.size(); i++) {
         for(int j = 0; j < pipeTiles[i].size(); j++) {
             PipeTile * tile = pipeTiles[i][j];
             if(tile->displayCharacter == 'S') {
-                printColor(charToString(tile->displayCharacter), BLUE, BLACK);
-            }
-            else if(tile->loopPipe) {
+                printColor(charToString(tile->displayCharacter), BLACK, YELLOW);
+            } else if(tile->loopPipe) {
                 printColor(charToString(tile->displayCharacter), YELLOW, BLACK);
             } else if(tile->insideOrOutside == INSIDE_LOOP) {
                 printColor(charToString(tile->displayCharacter), WHITE, RED);
@@ -142,9 +139,9 @@ void drawPipes(vector<vector<PipeTile*>> pipeTiles) {
     }
 }
 
+// set the tile to the left of your current walk direction as inside or outside
 void setInsideTileStatusOfLoopTile(pair<int, int> walkCoords, vector<vector<PipeTile*>> pipeTiles,
                                    direction walkDirection, inside_status insideOrOutside) {
-    // set insideOrOutside variable of neighbor depending on which direction you're walking in
     if(walkDirection == UP_DIRECTION) {
         if(walkCoords.second > 0) {
             PipeTile* leftPipeTile = pipeTiles[walkCoords.first][walkCoords.second - 1];
@@ -179,6 +176,7 @@ void setInsideTileStatusOfLoopTile(pair<int, int> walkCoords, vector<vector<Pipe
     }
 }
 
+// one iteration of fill-search on inside and outside tiles.  Returns the number of tiles you filled this iteration.  0 means it's done
 int fillInsideOutsideNeighbors(vector<vector<PipeTile*>> pipeTiles) {
     int fillCount = 0;
     for(int i = 0; i < pipeTiles.size(); i++) {
@@ -199,6 +197,7 @@ int fillInsideOutsideNeighbors(vector<vector<PipeTile*>> pipeTiles) {
     return fillCount;
 }
 
+// find the number of tiles marked as inside on your grid
 int countNumInsideTiles(vector<vector<PipeTile*>> pipeTiles) {
     int count = 0;
     for(int i = 0; i < pipeTiles.size(); i++) {
@@ -212,7 +211,9 @@ int countNumInsideTiles(vector<vector<PipeTile*>> pipeTiles) {
     return count;
 }
 
-int findResult(vector<string> lines) {
+// both part 1 and part 2 are in here for simplicity.  Part 1 finds the farthest distance in the loop from the start.
+// part 2 calculates the number of non-loop tiles completely enclosed by the loop.
+int calculateResult(vector<string> lines) {
     pair<int, int> startCoords = findStartCoords(lines);
     vector<vector<PipeTile *>> pipeTiles = parsePipes(lines);
 
@@ -222,7 +223,7 @@ int findResult(vector<string> lines) {
     vector<pair<int, int>> startNeighbors = findValidNeighborCoords(
         startCoords.first, startCoords.second, lines.size(), lines[0].size());
 
-    // find the two pipes that are connected to the start.  Kind of cumbersome.
+    // find the two pipes that are connected to the start and the directions they are traveling in.  Kind of cumbersome.
     vector<pair<int, int>> startConnectingPipeCoords;
     vector<direction> startFromDirections;
     for(int i = 0; i < startNeighbors.size(); i++) {
@@ -260,7 +261,7 @@ int findResult(vector<string> lines) {
         }
     }
 
-    // setting variables for the start and initial neighbors
+    // setting up variables for the two-way walk
     pipeTiles[startCoords.first][startCoords.second]->loopPipe = true;
     pair<int, int> walkCoordsOne = startConnectingPipeCoords[0];
     pair<int, int> walkCoordsTwo = startConnectingPipeCoords[1];
@@ -286,10 +287,11 @@ int findResult(vector<string> lines) {
         distanceCount++;
     }
 
+    // fill in this last tile's loopPipe status
     PipeTile* finalPipe = pipeTiles[walkCoordsOne.first][walkCoordsOne.second];
     finalPipe->loopPipe = true;
 
-    //if this is just part one all we need is the distance.
+    // part 1 is completed, we can simply return the distance count
     if(!PART_2_ENABLED) {
         deletePipeTiles(pipeTiles);
         return distanceCount;
@@ -327,10 +329,10 @@ int findResult(vector<string> lines) {
     //finally count the number of inside tiles in the grid.
     int insideTilesCount = countNumInsideTiles(pipeTiles);
 
-    // we spent a lot of time on this so let's draw it all pretty and colorful so we can admire it
+    // we spent a lot of time on this so let's draw it all so we can admire it
     drawPipes(pipeTiles);
 
-    // now clean up and return finally
+    // now clean up and return the part 2 result finally.
     deletePipeTiles(pipeTiles);
     return insideTilesCount;
 }
@@ -346,8 +348,8 @@ int main(int argc, char* argv[]) {
     //parse file
     vector<string> lines = parseFile(argv[1]);
 
-    // now handle lines to generate the result
-    int result = findResult(lines);
+    // now handle lines to generate the result.  Part 1 vs part 2 is handled inside this function.
+    int result = calculateResult(lines);
 
     //print final result to console
     cout << "result=" << result << endl;
