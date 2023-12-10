@@ -66,3 +66,39 @@ long long lcm(long long a, long long b)
     long long temp = gcd(a, b);
     return temp ? ((a / temp) * b) : 0;
 }
+
+// finds the row, col of neighbors above, below, left and right a given coord that are in range.
+vector<pair<int, int>> findValidNeighborCoords(int row, int col, int numRows, int numCols) {
+    vector<pair<int, int>> neighborCoords;
+    if(row > 0) {
+        neighborCoords.push_back(make_pair(row - 1, col));
+    }
+    if(row < numRows - 1) {
+        neighborCoords.push_back(make_pair(row + 1, col));
+    }
+    if(col > 0) {
+        neighborCoords.push_back(make_pair(row, col - 1));
+    }
+    if(col < numCols - 1){
+        neighborCoords.push_back(make_pair(row, col + 1));
+    }
+    return neighborCoords;
+}
+
+pair<int, int> goInDirection(pair<int, int> coords, direction dir) {
+    if(dir == UP_DIRECTION) {
+        return make_pair(coords.first - 1, coords.second);
+    }
+    if(dir == DOWN_DIRECTION) {
+        return make_pair(coords.first + 1, coords.second);
+    }
+    if(dir == LEFT_DIRECTION) {
+        return make_pair(coords.first, coords.second - 1);
+    }
+    if(dir == RIGHT_DIRECTION) {
+        return make_pair(coords.first, coords.second + 1);
+    }
+    cout << "fuck this.  dir=" << dir << endl;
+    //should never happen
+    return coords;
+}
