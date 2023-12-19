@@ -213,7 +213,7 @@ long long getPossibleArrangementsRecursive(vector<int> conditions, vector<int> c
     return result;
 }
 
-// our original solution won't work for very large srtings.  we'll need to use some sort of DP/recursion instead.
+// our original solution won't work for very large strings.  we'll need to use some sort of DP/recursion instead.
 long long getSumPossibleArrangementCountsUnfolded(vector<vector<string>> wordLines) {
     int sum = 0;
     for(int i = 0; i < wordLines.size(); i++) {
