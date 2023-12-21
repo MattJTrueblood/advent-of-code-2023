@@ -19,7 +19,7 @@ using std::endl;
 
 // Useful enums
 enum color { BLACK = 0, RED = 1, GREEN = 2, YELLOW = 3, BLUE = 4, MAGENTA = 5, CYAN = 6, WHITE = 7, DEFAULT = 9 };
-enum direction { UP_DIRECTION = 0, RIGHT_DIRECTION = 1, DOWN_DIRECTION = 2, LEFT_DIRECTION = 3 };
+enum direction { UP_DIRECTION = 0, RIGHT_DIRECTION = 1, DOWN_DIRECTION = 2, LEFT_DIRECTION = 3, NONE_DIRECTION = 4 };
 
 // Function declarations
 void printColor(const string& text, color foreground, color background);
