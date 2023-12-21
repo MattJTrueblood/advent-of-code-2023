@@ -18,6 +18,8 @@
 
 using namespace std;
 
+static const bool PART_2_ENABLED = true;
+
 class Tile {
 public:
     int cost = 0;
@@ -159,7 +161,7 @@ direction getDirectionOfMove(pair<int, int> fromCoords, pair<int, int> toCoords)
     return NONE_DIRECTION;
 }
 
-int findBestPathCostWithWeirdState(vector<string> lines) {
+int findBestPathCostPart1(vector<string> lines) {
     vector<vector<Tile*>> tiles = linesToTiles(lines);
 
     Tile * startTile = tiles[0][0];
@@ -229,6 +231,83 @@ int findBestPathCostWithWeirdState(vector<string> lines) {
     return currentState.distanceFromStart;
 }
 
+int findBestPathCostPart2(vector<string> lines) {
+    vector<vector<Tile*>> tiles = linesToTiles(lines);
+
+    Tile * startTile = tiles[0][0];
+    Tile * endTile = tiles[tiles.size() -1][tiles[0].size() - 1];
+
+    unordered_map<TileVisitedState, bool, TileVisitedState::Hash> visited;
+    priority_queue<TileVisitedState, vector<TileVisitedState>, TileVisitedState::Compare> unvisited;
+
+    TileVisitedState currentState = TileVisitedState(startTile->coords, NONE_DIRECTION, 0, 0, -1);
+    unvisited.push(currentState);
+
+    vector<TileVisitedState> allVisited;
+
+    while(!unvisited.empty()) {
+
+        currentState = unvisited.top();
+        unvisited.pop();
+
+        //check if we've already visited this state with a shorter distance before.  If so we can just skip and ignore this.
+        if(visited[currentState]) {
+            continue;
+        }
+
+        //let's add this to allVisited so we have a consistent memory address to use for prevState in all neighbors
+        allVisited.push_back(currentState);
+        int currentStateIndex = allVisited.size() - 1;
+
+        if(currentState.coords == endTile->coords) {
+            //we've found the end!  hooray!
+            break;
+        }
+
+        vector<Tile*> neighborTiles = tiles[currentState.coords.first][currentState.coords.second]->neighbors;
+        for(int i = 0; i < neighborTiles.size(); i++) {
+            //exclude the direction we just came from
+            if(currentState.previousStateIndex != -1 && neighborTiles[i]->coords == allVisited[currentState.previousStateIndex].coords) {
+                continue;
+            }
+
+            direction neighborDirection = getDirectionOfMove(currentState.coords, neighborTiles[i]->coords);
+            int neighborSameDirectionCount = (neighborDirection == currentState.fromDirection) ? currentState.sameDirectionCount + 1 : 1;
+
+            if(currentState.sameDirectionCount > 0 && currentState.sameDirectionCount < 4) {
+                if(currentState.fromDirection != neighborDirection) {
+                    continue;
+                }
+            }
+
+            if(neighborSameDirectionCount > 10) {
+                continue; // just don't include this neighbor state
+            }
+            int neighborDistance = currentState.distanceFromStart + neighborTiles[i]->cost;
+            TileVisitedState neighborState = TileVisitedState(neighborTiles[i]->coords, neighborDirection, neighborSameDirectionCount,
+                                                              neighborDistance, currentStateIndex);
+            if (visited.find(neighborState) == visited.end()) {
+                //not visited this state yet
+                unvisited.push(neighborState);
+            }
+        }
+
+        //set this as visited
+        visited[currentState] = true;
+    }
+
+    TileVisitedState pathState = currentState; // should be at the end
+    while(pathState.previousStateIndex != -1) {
+        tiles[pathState.coords.first][pathState.coords.second]->isPath = true;
+        pathState = allVisited[pathState.previousStateIndex];
+    }
+
+    printGrid(tiles);
+    deleteTiles(tiles);
+
+    return currentState.distanceFromStart;
+}
+
 int main(int argc, char* argv[]) {
     //check arguments
     if (argc < 2) {
@@ -241,7 +320,12 @@ int main(int argc, char* argv[]) {
     vector<string> lines = parseFile(argv[1]);
 
     // now handle lines to generate the result
-    int result = findBestPathCostWithWeirdState(lines);
+    int result;
+    if(PART_2_ENABLED) {
+        result = findBestPathCostPart2(lines);
+    } else {
+        result = findBestPathCostPart1(lines);
+    }
 
     //print final result to console
     cout << "result=" << result << endl;
