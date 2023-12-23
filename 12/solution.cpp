@@ -15,35 +15,38 @@
 
 using namespace std;
 
-enum spring_condition { OPERATIONAL_SPRING=1, DAMAGED_SPRING=2, UNKNOWN_SPRING=3 };
-
 static bool PART_2_ENABLED = true;
 
-// this is used as a key for the memoization table.  vec1 is conditions, vec2 is contiguous.  
+// all three possible conditions for springs in the conditions list
+enum spring_condition { OPERATIONAL_SPRING=1, DAMAGED_SPRING=2, UNKNOWN_SPRING=3 };
+
 class MyParameters {
 public:
-    std::vector<int> vec1;
-    std::vector<int> vec2;
+    vector<int> conditions;
+    vector<int> contiguous;
+    int currentBlockDamagedCount;
 
-    MyParameters(const std::vector<int>& v1, const std::vector<int>& v2) : vec1(v1), vec2(v2) {}
+    MyParameters(vector<int> conditions, vector<int> contiguous, int currentBlockDamagedCount) {
+        this->conditions = conditions;
+        this->contiguous = contiguous;
+        this->currentBlockDamagedCount = currentBlockDamagedCount;
+    }
 
-    bool operator==(const MyParameters& other) const {
-        return vec1 == other.vec1 && vec2 == other.vec2;
+    bool operator==(const MyParameters &other) const {
+        return conditions == other.conditions && contiguous == other.contiguous && currentBlockDamagedCount == other.currentBlockDamagedCount;
     }
 
     struct Hash {
-        std::size_t operator()(const MyParameters& params) const {
-            std::size_t hash = 0;
-            std::size_t prime = 31; // A prime number used in the hash combination
-
-            for (int i : params.vec1) {
-                hash = hash * prime + std::hash<int>()(i);
+        size_t operator()(const MyParameters& params) const {
+            size_t h = 0;
+            for (int i : params.conditions) {
+                h ^= hash<int>{}(i) + 0x9e3779b9 + (h << 6) + (h >> 2);
             }
-            for (int i : params.vec2) {
-                hash = hash * prime + std::hash<int>()(i);
+            for (int i : params.contiguous) {
+                h ^= hash<int>{}(i) + 0x9e3779b9 + (h << 6) + (h >> 2);
             }
-
-            return hash;
+            h ^= hash<int>{}(params.currentBlockDamagedCount) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            return h;
         }
     };
 };
@@ -168,68 +171,104 @@ string unfoldContiguousDamagedList(string s) {
 }
 
 long long getPossibleArrangementsRecursiveWithDP(unordered_map<MyParameters, long long, MyParameters::Hash>* memorize, MyParameters params) {
-    //todo:  use memorize to cache results for, and retrieve cached results of, this function
 
-    vector<int> conditions = params.vec1;
-    vector<int> contiguous = params.vec2;
-    long long possibleArrangements = 0;
-
-    // walk through conditions/contiguous backwards, slowly reducing the list, until you encounter unknown springs.
-    // call this recursive function on the two possibilities (unknown is damaged or undamaged)
-    while(conditions.size() > 0) {
-        int currentCondition = conditions.back();
-        if(currentCondition == (int) DAMAGED_SPRING) {
-            int currentContiguous = contiguous.back();
-            if(currentContiguous > 1) {
-                contiguous.back() = currentContiguous - 1;
-            } else {
-                contiguous.pop_back();
-            }
-        } else if(currentCondition == (int) UNKNOWN_SPRING) {
-            vector<int> conditionsIfDamaged = conditions;
-            conditionsIfDamaged.back() = (int) DAMAGED_SPRING;
-            MyParameters paramsIfDamaged = MyParameters(conditionsIfDamaged, contiguous);
-            possibleArrangements += getPossibleArrangementsRecursiveWithDP(memorize, paramsIfDamaged);
-
-            vector<int> conditionsIfOperational = conditions;
-            conditionsIfOperational.back() = (int) OPERATIONAL_SPRING;
-            MyParameters paramsIfOperational = MyParameters(conditionsIfOperational, contiguous);
-            possibleArrangements += getPossibleArrangementsRecursiveWithDP(memorize, paramsIfOperational);
-        } //else if operational we don't need to do anything
-        conditions.pop_back();
+    //check memorization map to see if we need to compute this
+    if (memorize->find(params) != memorize->end()) {
+        return (*memorize)[params];
     }
 
-    return possibleArrangements;
+    vector<int> conditions = params.conditions;
+    vector<int> contiguous = params.contiguous;
+
+    int numDamagedInCurrentBlock = params.currentBlockDamagedCount;
+
+    //walk through known conditions from the front until you find the first unknown term.
+    while(!conditions.empty() && conditions.front() != UNKNOWN_SPRING) {
+        if(conditions.front() == OPERATIONAL_SPRING) {
+            if(numDamagedInCurrentBlock != 0) { //end of a damaged block.
+                if(contiguous.empty()) {
+                    return 0; // not possible, should have at least one in contiguous.
+                }
+                if(contiguous.front() != numDamagedInCurrentBlock) {
+                    return 0; //this arrangement is not possible.
+                }
+                contiguous.erase(contiguous.begin()); // pop front
+                numDamagedInCurrentBlock = 0;
+
+            }
+            conditions.erase(conditions.begin()); // pop front
+            continue;
+        }
+        if(conditions.front() == DAMAGED_SPRING) {
+            numDamagedInCurrentBlock++; // start block
+            conditions.erase(conditions.begin());
+        }
+    }
+
+    //check if we've finished the list
+    if(conditions.empty()) {
+        //finish any spare block we didn't f inish before.
+        if(numDamagedInCurrentBlock != 0) {
+            if(contiguous.empty()) {
+                return 0; // not possible
+            }
+            if(contiguous.front() != numDamagedInCurrentBlock) {
+                return 0;
+            }
+            contiguous.erase(contiguous.begin()); // pop front
+        }
+
+        return contiguous.empty() ? 1 : 0; // if both are empty then this is a possible arrangement.  else it's not possible
+    }
+
+    //now we know the conditions.front() is unknown.  This is the complicated part.
+    if(conditions.front() == UNKNOWN_SPRING) {
+        vector<int> conditionsIfUnknownIsDamaged = conditions;
+        conditionsIfUnknownIsDamaged[0] = DAMAGED_SPRING;
+        MyParameters unknownIsDamagedParams = MyParameters(conditionsIfUnknownIsDamaged, contiguous, numDamagedInCurrentBlock);
+
+        vector<int> conditionsIfUnknownIsOperational = conditions;
+        conditionsIfUnknownIsOperational[0] = OPERATIONAL_SPRING;
+        MyParameters unknownIsOperationalParams = MyParameters(conditionsIfUnknownIsOperational, contiguous, numDamagedInCurrentBlock);
+
+        long long unknownIsDamagedResult = getPossibleArrangementsRecursiveWithDP(memorize, unknownIsDamagedParams);
+        long long unknownIsOperationalResult = getPossibleArrangementsRecursiveWithDP(memorize, unknownIsOperationalParams);
+
+        (*memorize)[unknownIsDamagedParams] = unknownIsDamagedResult;
+        (*memorize)[unknownIsOperationalParams] = unknownIsOperationalResult;
+
+        return unknownIsDamagedResult + unknownIsOperationalResult;
+    }
+
+    cout << "something went wrong, we should have triggered at least one of the conditions above." << endl;
+    return -1; // error result
 }
 
 long long getPossibleArrangementsRecursive(vector<int> conditions, vector<int> contiguousDamaged) {
-    unordered_map<MyParameters, long long, MyParameters::Hash>* memorize = new unordered_map<MyParameters, long long, MyParameters::Hash>();
-    // reversing the lists at the start makes this more efficient (can effecively pop from front using pop_back)
-    reverse(conditions.begin(), conditions.end());
-    reverse(contiguousDamaged.begin(), contiguousDamaged.end());
-    MyParameters params = MyParameters(conditions, contiguousDamaged);
-    long long result = getPossibleArrangementsRecursiveWithDP(memorize, params);
-    delete memorize;
+    unordered_map<MyParameters, long long, MyParameters::Hash> memorize;
+    // Start with 0 remaining in the current block
+    MyParameters startParams = MyParameters(conditions, contiguousDamaged, 0);
+    long long result = getPossibleArrangementsRecursiveWithDP(&memorize, startParams);
     return result;
 }
 
+
 // our original solution won't work for very large strings.  we'll need to use some sort of DP/recursion instead.
 long long getSumPossibleArrangementCountsUnfolded(vector<vector<string>> wordLines) {
-    int sum = 0;
+    long long sum = 0;
     for(int i = 0; i < wordLines.size(); i++) {
         //parse the data
-        //string unfoldedConditions = unfoldConditionsList(wordLines[i][0]);
-        //vector<int> conditions = parseConditionsList(unfoldedConditions);
-        //string unfoldedContiguousDamaged = unfoldContiguousDamagedList(wordLines[i][1]);
-        //vector<int> contiguousDamaged = parseContiguousDamagedList(unfoldedContiguousDamaged);
+        string unfoldedConditions = unfoldConditionsList(wordLines[i][0]);
+        vector<int> conditions = parseConditionsList(unfoldedConditions);
+        string unfoldedContiguousDamaged = unfoldContiguousDamagedList(wordLines[i][1]);
+        vector<int> contiguousDamaged = parseContiguousDamagedList(unfoldedContiguousDamaged);
+
+        vector<int> originalConditions = parseConditionsList(wordLines[i][0]);
+        vector<int> originalContiguousDamaged = parseContiguousDamagedList(wordLines[i][1]);
 
         //call the recursive function this time.
-        //long long possibleArrangements = getPossibleArrangementsRecursive(conditions, contiguousDamaged);
-        long long possibleArrangements = getPossibleArrangementsRecursive(
-                parseConditionsList(wordLines[i][0]),
-                parseContiguousDamagedList(wordLines[i][1])
-        );
-        cout << wordLines[i][0] << ": " << possibleArrangements << endl;
+        long long possibleArrangements = getPossibleArrangementsRecursive(conditions, contiguousDamaged);
+        cout << wordLines[i][0] << "; " << wordLines[i][1] << ":  " << possibleArrangements << endl;
         sum += possibleArrangements;
     }
 
