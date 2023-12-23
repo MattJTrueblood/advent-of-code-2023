@@ -103,7 +103,29 @@ pair<int, int> goInDirection(pair<int, int> coords, direction dir) {
     return coords;
 }
 
+pair<int, int> goInDirectionDistance(pair<int, int> coords, direction dir, int distance) {
+    if(dir == UP_DIRECTION) {
+        return make_pair(coords.first - distance, coords.second);
+    }
+    if(dir == DOWN_DIRECTION) {
+        return make_pair(coords.first + distance, coords.second);
+    }
+    if(dir == LEFT_DIRECTION) {
+        return make_pair(coords.first, coords.second - distance);
+    }
+    if(dir == RIGHT_DIRECTION) {
+        return make_pair(coords.first, coords.second + distance);
+    }
+
+    //should never happen
+    return coords;
+}
+
 string charToString(char c) {
     string s(1, c);
     return s;
+}
+
+size_t IntPairHash::operator()(const pair<int, int>& p) const {
+    return hash<int>()(p.first) ^ (hash<int>()(p.second) << 1);
 }
