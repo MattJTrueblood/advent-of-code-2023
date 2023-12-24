@@ -23,3 +23,11 @@ to
     static const bool PART_2_ENABLED = false;
 
 then, re-build and run the program to get the part 1 results.
+
+### random notes
+
+use:
+
+    sed -i 's/\r//g' "sample.txt"
+
+to remove crlf characters from a text file.  Helpful for some problems where you want to copy-paste a sample from the site.  Normally the input.txt files don't have these characters but if you make a text file in windows it adds them automatically.
