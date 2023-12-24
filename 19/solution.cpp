@@ -12,6 +12,8 @@
 
 using namespace std;
 
+static const bool PART_2_ENABLED = true;
+
 class Part {
 public:
     int x;
@@ -48,6 +50,34 @@ public:
 
     int sum() {
         return x + m + a + s;
+    }
+};
+
+class PartRanges {
+public:
+    pair<int, int> xRange;
+    pair<int, int> mRange;
+    pair<int, int> aRange;
+    pair<int, int> sRange;
+
+    // sometimes we just want to mark a range as invalid.  We can set this to true for that.
+    bool invalidRange = false; 
+
+    PartRanges() {};
+
+    long long calculateCombinations() {
+        long long possibleX = ((xRange.second - xRange.first) + 1);
+        long long possibleM = ((mRange.second - mRange.first) + 1);
+        long long possibleA = ((aRange.second - aRange.first) + 1);
+        long long possibleS = ((sRange.second - sRange.first) + 1);
+        return (possibleX * possibleM * possibleA * possibleS);
+    }
+
+    bool isValid() {
+        return (xRange.second >= xRange.first
+            && mRange.second >= mRange.first
+            && aRange.second >= aRange.first
+            && sRange.second >= sRange.first);
     }
 };
 
@@ -107,6 +137,118 @@ public:
         //else GREATER_THAN condition
         return (partValue > condition_val);
     }
+
+    //returns two new PartRanges.  The first is the ranges with this rule.  The second is the ranges without this rule.
+    // e.g. ranges x[1,4000]... and rule: x<2000 will return ranges: first = (x[1, 1999]...), second = (x(2000, 4000]...))
+    pair<PartRanges, PartRanges> checkRuleWithRanges(PartRanges ranges) {
+
+        //this code is tricky to remove duplication for.  Let's keep it verbose for now but be explicit about the rules and edge cases.
+        PartRanges inclusive = ranges;
+        PartRanges exclusive = ranges;
+
+        // only one scenario for NO_CONDITION:  simply return the inclusive range as the whole range and exclusive range as invalid.
+        if(condition == NO_CONDITION) {
+            exclusive.invalidRange = true;
+        }
+
+        // three scenarios for LESS THAN:
+        //   1) value is less than min input range.  e.g. rule x < 1000, range=x[2000, 3000].  should return {invalid, x[2000,3000]}.
+        //   2) value is within range.  e.g. rule x < 2500, range = x[2000, 3000].  should return {x[2000, 2499], x[2500, 3000]}.
+        //   3) value is greater than max input range.  e.g. rule x < 3500, range=[2000, 3000].  should return {x[2000, 3000], invalid}.
+
+        if(condition == LESS_THAN) {
+            if(condition_part == 'x') {
+                if(condition_val <= ranges.xRange.first) {
+                    inclusive.invalidRange = true;
+                } else if(condition_val > ranges.xRange.first && condition_val <= ranges.xRange.second) {
+                    inclusive.xRange = make_pair(ranges.xRange.first, condition_val - 1);
+                    exclusive.xRange = make_pair(condition_val, ranges.xRange.second);
+                } else { //if condition_val > ranges.xRange.second 
+                    exclusive.invalidRange = true;
+                }
+            }
+            if(condition_part == 'm') {
+                if(condition_val <= ranges.mRange.first) {
+                    inclusive.invalidRange = true;
+                } else if(condition_val > ranges.mRange.first && condition_val <= ranges.mRange.second) {
+                    inclusive.mRange = make_pair(ranges.mRange.first, condition_val - 1);
+                    exclusive.mRange = make_pair(condition_val, ranges.mRange.second);
+                } else { //if condition_val > ranges.mRange.second 
+                    exclusive.invalidRange = true;
+                }
+            }
+            if(condition_part == 'a') {
+                if(condition_val <= ranges.aRange.first) {
+                    inclusive.invalidRange = true;
+                } else if(condition_val > ranges.aRange.first && condition_val <= ranges.aRange.second) {
+                    inclusive.aRange = make_pair(ranges.aRange.first, condition_val - 1);
+                    exclusive.aRange = make_pair(condition_val, ranges.aRange.second);
+                } else { //if condition_val > ranges.aRange.second 
+                    exclusive.invalidRange = true;
+                }
+            }
+            if(condition_part == 's') {
+                if(condition_val <= ranges.sRange.first) {
+                    inclusive.invalidRange = true;
+                } else if(condition_val > ranges.sRange.first && condition_val <= ranges.sRange.second) {
+                    inclusive.sRange = make_pair(ranges.sRange.first, condition_val - 1);
+                    exclusive.sRange = make_pair(condition_val, ranges.sRange.second);
+                } else { //if condition_val > ranges.sRange.second 
+                    exclusive.invalidRange = true;
+                }
+            }
+        }
+
+        // three scenarios for GREATER THAN:
+        //   1) value is greater than min input range.  e.g. rule x > 3500, range=x[2000, 3000].  should return {invalid, x[2000,3000]}.
+        //   2) value is within range.  e.g. rule x > 2500, range = x[2000, 3000].  should return {x[2501, 3000], x[2000, 2500]}.
+        //   3) value is less than max input range.  e.g. rule x > 1500, range=x[2000, 3000].  should return {x[2000, 3000], invalid}
+
+        if(condition == GREATER_THAN) {
+            if(condition_part == 'x') {
+                if(condition_val >= ranges.xRange.second) {
+                    inclusive.invalidRange = true;
+                } else if(condition_val >= ranges.xRange.first && condition_val < ranges.xRange.second) {
+                    inclusive.xRange = make_pair(condition_val + 1, ranges.xRange.second);
+                    exclusive.xRange = make_pair(ranges.xRange.first, condition_val);
+                } else { //if condition_val < ranges.xRange.second 
+                    exclusive.invalidRange = true;
+                }
+            }
+            if(condition_part == 'm') {
+                if(condition_val >= ranges.mRange.second) {
+                    inclusive.invalidRange = true;
+                } else if(condition_val >= ranges.mRange.first && condition_val < ranges.mRange.second) {
+                    inclusive.mRange = make_pair(condition_val + 1, ranges.mRange.second);
+                    exclusive.mRange = make_pair(ranges.mRange.first, condition_val);
+                } else { //if condition_val < ranges.mRange.second 
+                    exclusive.invalidRange = true;
+                }
+            }
+            if(condition_part == 'a') {
+                if(condition_val >= ranges.aRange.second) {
+                    inclusive.invalidRange = true;
+                } else if(condition_val >= ranges.aRange.first && condition_val < ranges.aRange.second) {
+                    inclusive.aRange = make_pair(condition_val + 1, ranges.aRange.second);
+                    exclusive.aRange = make_pair(ranges.aRange.first, condition_val);
+                } else { //if condition_val < ranges.aRange.second 
+                    exclusive.invalidRange = true;
+                }
+            }
+            if(condition_part == 's') {
+                if(condition_val >= ranges.sRange.second) {
+                    inclusive.invalidRange = true;
+                } else if(condition_val >= ranges.sRange.first && condition_val < ranges.sRange.second) {
+                    inclusive.sRange = make_pair(condition_val + 1, ranges.sRange.second);
+                    exclusive.sRange = make_pair(ranges.sRange.first, condition_val);
+                } else { //if condition_val < ranges.sRange.second 
+                    exclusive.invalidRange = true;
+                }
+            }
+        }
+
+        return make_pair(inclusive, exclusive);
+    }
 };
 
 class Workflow {
@@ -160,32 +302,84 @@ bool partIsAccepted(unordered_map<string, Workflow> &workflowsMap, Part part) {
     return (workflowName == "A");
 }
 
-int getSumAcceptedRatingNumbers(vector<string> lines) {
+long long getSumAcceptedRatingNumbers(vector<string> lines) {
     unordered_map<string, Workflow> workflowsMap;
     int blankLineIndex = -1;
     for(int i = 0; i < lines.size(); i++) {
         if(lines[i].size() <= 2) { 
             // empty or mostly empty line, accounting for whitespace characters or newlines
-            cout << "done with workflows" << endl;
             blankLineIndex = i;
             break;
         }
-        cout << "parsing " << lines[i];
         Workflow workflow = Workflow(lines[i]);
-        cout << " as name " << workflow.name << endl;
         workflowsMap[workflow.name] = workflow;
     }
 
-    int sum = 0;
+    long long sum = 0;
     for(int i = blankLineIndex + 1; i < lines.size(); i++) {
         Part part = Part(lines[i]);
-        cout << "part:" << part.x << "," << part.m << "," << part.a << "," << part.s << endl;
         if(partIsAccepted(workflowsMap, part)) {
             sum += part.sum();
         }
     }
 
     return sum;
+}
+
+// walk through each rule finding the combinations for this range of numbers for each rule.  Recursively traverse through workflows until they
+// resolve to A (in which case we find the combinations for that range) or R (in which case we ignore it), keeping track of the ranges that
+// work for that particular rule (and those that don't and thus move on to the next rule; inclusive vs exclusive is what I call that).
+long long findAcceptedInRangeRecursive(unordered_map<string, Workflow> &workflowsMap, string currentWorkflowName, PartRanges currentRanges) {
+    Workflow currentWorkflow = workflowsMap[currentWorkflowName];
+    long long totalAccepted = 0;
+    for(Rule rule : currentWorkflow.rules) {
+        pair<PartRanges, PartRanges> inclusiveExclusiveRanges = rule.checkRuleWithRanges(currentRanges);
+        PartRanges inclusive = inclusiveExclusiveRanges.first;
+        PartRanges exclusive = inclusiveExclusiveRanges.second;
+
+        if(!inclusive.invalidRange && inclusive.isValid()) {
+            if(rule.destinationName == "A") {
+                totalAccepted += inclusive.calculateCombinations();
+            } else if(rule.destinationName != "R") { //if R we can basically just ignore it.
+                totalAccepted += findAcceptedInRangeRecursive(workflowsMap, rule.destinationName, inclusive);
+            }
+        }
+        if(exclusive.invalidRange || !exclusive.isValid()) {
+            // we can ignore all future rules in this workflow since the remaining ranges are known to be invalid
+            break; 
+        }
+        currentRanges = exclusive;
+    }
+
+    return totalAccepted;
+}
+
+long long getAcceptedCombinationsStart(unordered_map<string, Workflow> &workflowsMap) {
+    PartRanges startRanges = PartRanges();
+    startRanges.xRange = make_pair(1, 4000);
+    startRanges.mRange = make_pair(1, 4000);
+    startRanges.aRange = make_pair(1, 4000);
+    startRanges.sRange = make_pair(1, 4000);
+    string startWorkflowName = "in";
+
+    return findAcceptedInRangeRecursive(workflowsMap, startWorkflowName, startRanges);
+}
+
+//part 2 solution solver
+long long getNumAcceptedRatingCombinations(vector<string> lines) {
+    //parse the workflows into a map just like before.
+    unordered_map<string, Workflow> workflowsMap;
+    int blankLineIndex = -1;
+    for(int i = 0; i < lines.size(); i++) {
+        if(lines[i].size() <= 2) { 
+            blankLineIndex = i;
+            break;
+        }
+        Workflow workflow = Workflow(lines[i]);
+        workflowsMap[workflow.name] = workflow;
+    }
+
+    return getAcceptedCombinationsStart(workflowsMap);
 }
 
 int main(int argc, char* argv[]) {
@@ -200,7 +394,12 @@ int main(int argc, char* argv[]) {
     vector<string> lines = parseFile(argv[1]);
 
     // now handle lines to generate the result
-    int result = getSumAcceptedRatingNumbers(lines);
+    long long result;
+    if(PART_2_ENABLED) {
+        result = getNumAcceptedRatingCombinations(lines);
+    } else {
+        result = getSumAcceptedRatingNumbers(lines);
+    }
 
     //print final result to console
     cout << "result=" << result << endl;
