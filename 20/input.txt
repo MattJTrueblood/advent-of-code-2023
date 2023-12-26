@@ -56,3 +56,4 @@
 %lt -> ff, vd
 %ds -> bd
 %vp -> nt, qj
+*rx -> foobar

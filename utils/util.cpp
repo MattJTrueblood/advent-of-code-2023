@@ -67,6 +67,15 @@ long long lcm(long long a, long long b)
     return temp ? ((a / temp) * b) : 0;
 }
 
+// least common multiple of a vector
+long long lcm(const vector<long long>& nums) {
+    long long result = 1;
+    for (long long num : nums) {
+        result = lcm(result, num);
+    }
+    return result;
+}
+
 // finds the row, col of neighbors above, below, left and right a given coord that are in range.
 vector<pair<int, int>> findValidNeighborCoords(int row, int col, int numRows, int numCols) {
     vector<pair<int, int>> neighborCoords;

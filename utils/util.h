@@ -37,6 +37,7 @@ vector<vector<string>> parseAllLines(vector<string>);
 int charToInt(char c);
 long long gcd(long long a, long long b);
 long long lcm(long long a, long long b);
+long long lcm(const vector<long long>& nums);
 vector<pair<int, int>> findValidNeighborCoords(int row, int col, int numRows, int numCols);
 pair<int, int> goInDirection(pair<int, int> coords, direction dir);
 pair<int, int> goInDirectionDistance(pair<int, int> coords, direction dir, int distance);
