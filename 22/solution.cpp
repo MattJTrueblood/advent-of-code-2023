@@ -146,6 +146,8 @@ void deleteBlocks(vector<Block*> blocks) {
 }
 
 //essentially just nudge each block down 1 (checking for collisions) until none of the blocks can descend further.
+//this is very inefficent and bad and there are easier ways but this is the least-error-prone way I found.
+//if I cared more I could easily optimize this but it's not really necessary, it only takes a few seconds for part 1 and part 2.
 void settleAllBlocks(vector<Block*> blocks) {
     bool finishedSettlingBlocks = false;
 
