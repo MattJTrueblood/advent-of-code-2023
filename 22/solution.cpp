@@ -7,12 +7,14 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <set>
 #include <algorithm>
+#include <unordered_map>
 #include "../utils/util.h"
 
 using namespace std;
 
-static const bool PART_2_ENABLED = false;
+static const bool PART_2_ENABLED = true;
 
 class Coords {
 public:
@@ -145,9 +147,9 @@ void deleteBlocks(vector<Block*> blocks) {
     }
 }
 
-//essentially just nudge each block down 1 (checking for collisions) until none of the blocks can descend further.
+//essentially just nudge each block down 1 (checking for collisions/overlaps) until none of the blocks can descend further.
 //this is very inefficent and bad and there are easier ways but this is the least-error-prone way I found.
-//if I cared more I could easily optimize this but it's not really necessary, it only takes a few seconds for part 1 and part 2.
+//if I cared more I could easily optimize this but it's not really necessary, it only takes a few seconds.
 void settleAllBlocks(vector<Block*> blocks) {
     bool finishedSettlingBlocks = false;
 
@@ -211,17 +213,6 @@ bool checkIfCanBeRemoved(Block* blockToRemove) {
     return true;
 }
 
-void printGraph(vector<Block*> blocks) {
-    for(Block* block: blocks) {
-        for(Block* s: block->supports) {
-            cout << "block " << block->id << " supports " << s->id << endl;
-        }
-        for(Block* sb: block->supportedBy) {
-            cout << "block " << block->id << " is supportedBy " << sb->id << endl;
-        }
-    }
-}
-
 int getNumBlocksThatCanBeRemoved(vector<Block*> blocks) {
     int canBeRemoved = 0;
     for(Block* block: blocks) {
@@ -232,22 +223,60 @@ int getNumBlocksThatCanBeRemoved(vector<Block*> blocks) {
     return canBeRemoved;
 }
 
-long long part2(vector<string> lines) {
+void initializeSupportCounts(Block* block, unordered_map<int, int>& supportCount) {
+    for (Block* supportedBlock : block->supports) {
+        if (supportCount.find(supportedBlock->id) == supportCount.end()) {
+            supportCount[supportedBlock->id] = supportedBlock->supportedBy.size();
+            initializeSupportCounts(supportedBlock, supportCount);
+        }
+    }
+}
 
-    return -1;
+void processFallingBlockRecursive(Block* block, set<int>& allChainReactionBlockIds, unordered_map<int, int>& supportCount) {
+    for (Block* supportsBlock : block->supports) {
+        if (--supportCount[supportsBlock->id] == 0) {
+            allChainReactionBlockIds.insert(supportsBlock->id);
+            processFallingBlockRecursive(supportsBlock, allChainReactionBlockIds, supportCount);
+        }
+    }
+}
+
+int countChainReactionFallingBlocks(Block* block) {
+    set<int> allChainReactionBlockIds;
+    unordered_map<int, int> supportCount;
+    initializeSupportCounts(block, supportCount);
+    processFallingBlockRecursive(block, allChainReactionBlockIds, supportCount);
+    return allChainReactionBlockIds.size();
+}
+
+int getSumChainReactionFallingBlocks(vector<Block*> blocks) {
+    int sum = 0;
+    for(Block* block: blocks) {
+        if(!checkIfCanBeRemoved(block)) {
+            sum += countChainReactionFallingBlocks(block);
+        }
+    }
+    return sum;
+}
+
+long long part2(vector<string> lines) {
+    vector<Block*> blocks = parseBlocks(lines);
+
+    settleAllBlocks(blocks);
+    setupBlockDependencies(blocks);
+
+    cout << "sanity check: " << getNumBlocksThatCanBeRemoved(blocks) << endl;
+    int result = getSumChainReactionFallingBlocks(blocks);
+
+    deleteBlocks(blocks);
+    return result;
 }
 
 long long part1(vector<string> lines) {
     vector<Block*> blocks = parseBlocks(lines);
 
-    //sort
-    sort(blocks.begin(), blocks.end(), [](Block* a, Block* b) {
-        return a->minZ < b->minZ;
-    });
-
     settleAllBlocks(blocks);
     setupBlockDependencies(blocks);
-    //printGraph(blocks);
 
     int result = getNumBlocksThatCanBeRemoved(blocks);
 
