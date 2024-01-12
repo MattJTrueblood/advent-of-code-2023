@@ -16,7 +16,7 @@
 
 using namespace std;
 
-static const bool PART_2_ENABLED = false;
+static const bool PART_2_ENABLED = true;
 
 enum tile_type {PATH=0, FOREST=1, RIGHT_SLOPE=2, DOWN_SLOPE=3, LEFT_SLOPE=4, UP_SLOPE=5};
 
@@ -114,6 +114,9 @@ void printGrid(vector<vector<Tile*>> grid) {
 }
 
 bool isValidMove(Tile* from, Tile* to) {
+    if(PART_2_ENABLED) {
+        return true;
+    }
     if(from->type == PATH) {
         if(to->type == PATH) {
             return true; // both are paths
@@ -216,18 +219,27 @@ int findLongestPathRecursive(vector<pair<GraphNode*, int>> traverse, GraphNode* 
     pair<GraphNode*, int> latestStep = traverse.back();
     GraphNode* latestGraphNode = latestStep.first;
     int latestDistance = latestStep.second;
-    cout << "searching for longest path.  currentnode:" << latestGraphNode->tile->row << "," << latestGraphNode->tile->col << "; "
-         << "latestDistance=" << latestDistance << endl;
+
     if(latestGraphNode == end) {
-        cout << "found end! distance=" << latestDistance << endl;
         return latestDistance;
     }
 
-    int bestDistance = -99;
+    int bestDistance = -1; // default for paths that don't ever reach the end
     for(int i = 0; i < latestGraphNode->connections.size(); i++) {
-        traverse.push_back(make_pair(latestGraphNode->connections[i], latestGraphNode->connectionDistances[i] + latestDistance));
-        bestDistance = max(findLongestPathRecursive(traverse, end), bestDistance);
-        traverse.pop_back();
+        bool connectionNotAlreadyVisited = true;
+        if(PART_2_ENABLED) {
+            for(pair<GraphNode*, int> pathStep: traverse) {
+                if(pathStep.first == latestGraphNode->connections[i]) {
+                    connectionNotAlreadyVisited = false;
+                    break;
+                }
+            }
+        }
+        if(connectionNotAlreadyVisited) {
+            traverse.push_back(make_pair(latestGraphNode->connections[i], latestGraphNode->connectionDistances[i] + latestDistance));
+            bestDistance = max(findLongestPathRecursive(traverse, end), bestDistance);
+            traverse.pop_back();
+        }
     }
 
     return bestDistance;
@@ -256,11 +268,6 @@ void deleteGraph(vector<GraphNode*> graph) {
     }
 }
 
-long long part2(vector<string> lines) {
-    // TODO
-    return -1;
-}
-
 long long part1(vector<string> lines) {
     vector<vector<Tile*>> grid = parseGrid(lines);
 
@@ -269,12 +276,13 @@ long long part1(vector<string> lines) {
 
     int result = findLongestPathFromStartToEnd(graph);
 
-    printGrid(grid);
-
     deleteGrid(grid);
     deleteGraph(graph);
-
     return result;
+}
+
+long long part2(vector<string> lines) {
+    return part1(lines); // easier to just check PART_2_ENABLED in the existing code (e.g. isValidMove)
 }
 
 int main(int argc, char* argv[]) {
